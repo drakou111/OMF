@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="OMF:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/OMF_jar</output-path>
+    <root id="archive" name="OMF.jar">
+      <element id="module-output" name="OMF" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/formdev/flatlaf/2.0/flatlaf-2.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
