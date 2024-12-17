@@ -39,7 +39,7 @@ public class MainGUI {
         }
 
         // Create the main frame
-        JFrame frame = new JFrame("MacroRule Configuration");
+        JFrame frame = new JFrame("OMF");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1200, 800);
         frame.setLayout(new BorderLayout());
