@@ -12,14 +12,14 @@ public class InputTick {
     public boolean JUMP;
     public boolean GROUNDED;
 
-    public InputTick(boolean W, boolean A, boolean S, boolean D, boolean JUMP, boolean SPRINT, boolean SHIFT, boolean GROUNDED) {
+    public InputTick(boolean W, boolean A, boolean S, boolean D,boolean SPRINT, boolean SHIFT, boolean JUMP, boolean GROUNDED) {
         this.W = W;
         this.A = A;
         this.S = S;
         this.D = D;
-        this.JUMP = JUMP;
         this.SPRINT = SPRINT;
         this.SHIFT = SHIFT;
+        this.JUMP = JUMP;
         this.GROUNDED = GROUNDED;
     }
 
@@ -31,9 +31,9 @@ public class InputTick {
         result += A ? "A " : "";
         result += S ? "S " : "";
         result += D ? "D " : "";
-        result += JUMP ? "SPRINT " : "";
-        result += SPRINT ? "SHIFT " : "";
-        result += SHIFT ? "JUMP" : "";
+        result += SPRINT ? "SPRINT " : "";
+        result += SHIFT ? "SHIFT" : "";
+        result += JUMP ? "JUMP " : "";
 
         if (result.isEmpty()) return "No input";
         return result;

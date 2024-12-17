@@ -5,6 +5,8 @@ import omf.util.InputTick;
 import omf.util.Vec3;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class BruteForcer {
@@ -17,6 +19,55 @@ public class BruteForcer {
         BruteForcer.bestFinalVector = new Vec3(0, 0, 0);
         Player player = new Player(new Vec3(0, 0, 0), rules.startingAngle, rules.effects.jumpBoost, rules.effects.speed, rules.effects.slowness);
         branch(rules, 0, 999999, player, new ArrayList<>(), new ArrayList<>());
+    }
+
+    public static List<Integer> sortVec3Indices(List<Vec3> vecList, boolean xAxis, boolean ascending) {
+        // Create an index list corresponding to the input Vec2 list
+        List<Vec3> copy = new ArrayList<>();
+        for (Vec3 vec : vecList) {
+            copy.add(vec.copy());
+        }
+
+        List<Integer> indexList = new ArrayList<>();
+        for (int i = 0; i < vecList.size(); i++) {
+            indexList.add(i);
+        }
+
+        // Sort the index list using a custom comparator
+        Collections.sort(indexList, (i1, i2) -> {
+            if (xAxis) {
+                int cmp = Double.compare(copy.get(i1).x, copy.get(i2).x);
+                return ascending ? cmp : -cmp;
+            } else {
+                int cmp = Double.compare(copy.get(i1).z, copy.get(i2).z);
+                return ascending ? cmp : -cmp;
+            }
+        });
+
+        return indexList;
+    }
+
+    public static int getEdgeIndex(List<Integer> sortedIndexes, List<InputTick> allInputTicks) {
+        int index = 0;
+        List<Integer> edgeIndexes = new ArrayList<>();
+
+        for (int i = 0; i < sortedIndexes.size(); i++) {
+            if (!allInputTicks.get(sortedIndexes.get(i)).GROUNDED) continue;
+
+            // If starting tick, then must start there.
+            if (sortedIndexes.get(i) == 0) break;
+
+            // if one of tick's neighbours is in edgeIndexes, then start there.
+            if (edgeIndexes.contains(sortedIndexes.get(i) - 1) || (sortedIndexes.get(i) < sortedIndexes.size() - 1 && edgeIndexes.contains(sortedIndexes.get(i) + 1))) {
+                index = sortedIndexes.get(i);
+                break;
+            }
+            // Otherwise, add it to edgeIndexes.
+            else {
+                edgeIndexes.add(sortedIndexes.get(i));
+            }
+        }
+        return index;
     }
 
     public static OutputInfo checkIfValid(MacroRule rules, List<Vec3> allPositions, List<InputTick> allInputTicks) {
@@ -43,28 +94,26 @@ public class BruteForcer {
         // Within momentum
         Vec3 max = new Vec3(0, 0, 0);
         Vec3 min = new Vec3(0, 0, 0);
-
-        Vec3 maxFloor = new Vec3(0, 0, 0);
-        Vec3 minFloor = new Vec3(0, 0, 0);
         for (int i = 0; i < allPositions.size(); i++) {
             min.x = Math.min(min.x, allPositions.get(i).x);
-            min.y = Math.min(min.y, allPositions.get(i).y);
             min.z = Math.min(min.z, allPositions.get(i).z);
 
             max.x = Math.max(max.x, allPositions.get(i).x);
-            max.y = Math.max(max.y, allPositions.get(i).y);
             max.z = Math.max(max.z, allPositions.get(i).z);
-
-            if (i < allPositions.size() - 1 && allInputTicks.get(i + 1).GROUNDED) {
-                minFloor.x = Math.min(minFloor.x, allPositions.get(i).x);
-                minFloor.y = Math.min(minFloor.y, allPositions.get(i).y);
-                minFloor.z = Math.min(minFloor.z, allPositions.get(i).z);
-
-                maxFloor.x = Math.max(maxFloor.x, allPositions.get(i).x);
-                maxFloor.y = Math.max(maxFloor.y, allPositions.get(i).y);
-                maxFloor.z = Math.max(maxFloor.z, allPositions.get(i).z);
-            }
         }
+
+        List<Integer> xAscending = sortVec3Indices(allPositions, true, true);
+        List<Integer> xDescending = sortVec3Indices(allPositions, true, false);
+        List<Integer> zAscending = sortVec3Indices(allPositions, false, true);
+        List<Integer> zDescending = sortVec3Indices(allPositions, false, false);
+
+        int leftIndex = getEdgeIndex(xAscending, allInputTicks);
+        int rightIndex = getEdgeIndex(xDescending, allInputTicks);
+        int frontIndex = getEdgeIndex(zDescending, allInputTicks);
+        int backIndex = getEdgeIndex(zAscending, allInputTicks);
+
+        Vec3 maxFloor = new Vec3(allPositions.get(rightIndex).x, 0, allPositions.get(frontIndex).z);
+        Vec3 minFloor = new Vec3(allPositions.get(leftIndex).x, 0, allPositions.get(backIndex).z);
 
         //width
         double widthMax = maxFloor.x;
@@ -124,8 +173,9 @@ public class BruteForcer {
 
         for (InputTick combination : allCombinations) {
             int newTimeSinceJumped = timeSinceJumped;
-            if (combination.JUMP && combination.GROUNDED)
+            if (combination.JUMP && combination.GROUNDED) {
                 newTimeSinceJumped = 0;
+            }
             else
                 newTimeSinceJumped++;
 

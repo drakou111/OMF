@@ -255,6 +255,8 @@ public class MainGUI {
 
         AtomicReference<Thread> bruteForceThread = new AtomicReference<>();  // Track the current brute force thread
 
+        //TODO: Add stop bruteforcer button maybe.
+
         startButton.addActionListener(e -> {
             try {
                 tierMomentum = Integer.parseInt(tierMomentumField.getText());
@@ -351,14 +353,14 @@ public class MainGUI {
         JComboBox<InputState> dBox = new JComboBox<>(InputState.values());
         dBox.setSelectedItem(input.allStates[3]);
 
-        JComboBox<InputState> jumpBox = new JComboBox<>(InputState.values());
-        jumpBox.setSelectedItem(input.allStates[4]);
-
         JComboBox<InputState> sprintBox = new JComboBox<>(InputState.values());
-        sprintBox.setSelectedItem(input.allStates[5]);
+        sprintBox.setSelectedItem(input.allStates[4]);
 
         JComboBox<InputState> shiftBox = new JComboBox<>(InputState.values());
-        shiftBox.setSelectedItem(input.allStates[6]);
+        shiftBox.setSelectedItem(input.allStates[5]);
+
+        JComboBox<InputState> jumpBox = new JComboBox<>(InputState.values());
+        jumpBox.setSelectedItem(input.allStates[6]);
 
         JPanel panel = new JPanel(new GridLayout(0, 2));
         panel.add(new JLabel("W:"));
@@ -369,12 +371,12 @@ public class MainGUI {
         panel.add(sBox);
         panel.add(new JLabel("D:"));
         panel.add(dBox);
-        panel.add(new JLabel("Jump:"));
-        panel.add(jumpBox);
-        panel.add(new JLabel("Sprint:"));
+        panel.add(new JLabel("SPRINT:"));
         panel.add(sprintBox);
-        panel.add(new JLabel("Shift:"));
+        panel.add(new JLabel("SHIFT:"));
         panel.add(shiftBox);
+        panel.add(new JLabel("JUMP:"));
+        panel.add(jumpBox);
 
         int result = JOptionPane.showConfirmDialog(parent, panel, "Edit MacroRuleInput", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
@@ -383,9 +385,9 @@ public class MainGUI {
                     (InputState) aBox.getSelectedItem(),
                     (InputState) sBox.getSelectedItem(),
                     (InputState) dBox.getSelectedItem(),
-                    (InputState) jumpBox.getSelectedItem(),
                     (InputState) sprintBox.getSelectedItem(),
-                    (InputState) shiftBox.getSelectedItem()
+                    (InputState) shiftBox.getSelectedItem(),
+                    (InputState) jumpBox.getSelectedItem()
             );
         }
         return null;
