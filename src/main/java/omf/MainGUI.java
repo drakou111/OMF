@@ -251,7 +251,10 @@ public class MainGUI {
         // Buttons Panel
         JPanel buttonPanel = new JPanel();
         JButton startButton = new JButton("Start BruteForcer");
+        JButton stopButton = new JButton("Stop BruteForcer");
+
         buttonPanel.add(startButton);
+        buttonPanel.add(stopButton);
 
         AtomicReference<Thread> bruteForceThread = new AtomicReference<>();  // Track the current brute force thread
 
@@ -302,6 +305,17 @@ public class MainGUI {
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Invalid input! Please check your parameters.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Stop BruteForcer button action
+        stopButton.addActionListener(e -> {
+            // Interrupt the thread if it is running
+            if (bruteForceThread.get() != null && bruteForceThread.get().isAlive()) {
+                bruteForceThread.get().interrupt();
+                JOptionPane.showMessageDialog(frame, "BruteForcer has been stopped.", "Stopped", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(frame, "No BruteForcer is running.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 

@@ -34,6 +34,7 @@ public class InputTick {
         result += SPRINT ? "SPRINT " : "";
         result += SHIFT ? "SHIFT" : "";
         result += JUMP ? "JUMP " : "";
+        result += GROUNDED ? "(on ground)" : "";
 
         if (result.isEmpty()) return "No input";
         return result;
