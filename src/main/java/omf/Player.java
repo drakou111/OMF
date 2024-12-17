@@ -17,9 +17,9 @@ public class Player {
     public int speedStrength;
     public int slownessStrength;
 
-    float moveForward = 0F;
-    float moveStrafe = 0F;
-    float jumpMovementFactor = 0.02F;
+    public float moveForward = 0F;
+    public float moveStrafe = 0F;
+    public float jumpMovementFactor = 0.02F;
 
     public Player(Vec3 position, Vec3 velocity, boolean jumping, boolean sprinting, boolean shifting, boolean grounded, boolean wasGrounded, float facing, int jumpStrength, int speedStrength, int slownessStrength) {
         this.position = position;
@@ -37,7 +37,7 @@ public class Player {
 
     public Player(Vec3 position, float facing, int jumpStrength, int speedStrength, int slownessStrength) {
         this.position = position;
-        this.velocity = Vec3.ZERO;
+        this.velocity = new Vec3(0, 0, 0);
         this.jumping = false;
         this.sprinting = false;
         this.grounded = true;
@@ -75,7 +75,7 @@ public class Player {
     }
 
     public Player copy() {
-        return new Player(
+        Player newPlayer = new Player(
             this.position.copy(),
             this.velocity.copy(),
             this.jumping,
@@ -88,10 +88,15 @@ public class Player {
             this.speedStrength,
             this.slownessStrength
         );
+        newPlayer.jumpMovementFactor = this.jumpMovementFactor;
+        return newPlayer;
     }
 
     private void updateFlags(InputTick inputTick) {
         wasGrounded = grounded;
+
+        boolean isSNEAK = inputTick.SHIFT;
+        boolean moveFlag = moveForward >= 0.8F;
 
         moveStrafe = 0F;
         moveForward = 0F;
@@ -110,7 +115,11 @@ public class Player {
             moveForward = (float) ((double) moveForward * 0.3D);
         }
 
-        if (!sprinting && moveForward >= 0.8F && inputTick.SPRINT) {
+        if (grounded && !isSNEAK && moveFlag && moveForward >= 0.8F && !sprinting) {
+            sprinting = true;
+        }
+
+        if (!sprinting &&  moveForward >= 0.8F && inputTick.SPRINT) {
             sprinting = true;
         }
 
@@ -167,7 +176,6 @@ public class Player {
 
         if (grounded) mult = 0.6F * mult;
 
-        //System.out.println(velocity.z);
         position.add(velocity);
 
         if (!grounded) {
@@ -183,6 +191,7 @@ public class Player {
         if (sprinting) {
             jumpMovementFactor = (float) ((double) jumpMovementFactor + (double) 0.02F * 0.3D);
         }
+
     }
 
     private void moveFlying(float strafe, float forward, float friction) {
