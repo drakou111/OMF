@@ -12,6 +12,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.formdev.flatlaf.FlatDarkLaf;
 
 public class MainGUI {
@@ -24,8 +26,8 @@ public class MainGUI {
     private static SpeedOptimize optimize = SpeedOptimize.MAX_SPEED;
     private static Effects effects = new Effects(0, 0, 0);
     private static JTextArea terminalArea;
-    private static int momentumWidth = 10;
-    private static int momentumHeight = 10;
+    private static double momentumWidth = 10;
+    private static double momentumHeight = 10;
     private static boolean frontWall = false;
     private static boolean rightWall = false;
     private static boolean backWall = false;
@@ -251,6 +253,8 @@ public class MainGUI {
         JButton startButton = new JButton("Start BruteForcer");
         buttonPanel.add(startButton);
 
+        AtomicReference<Thread> bruteForceThread = new AtomicReference<>();  // Track the current brute force thread
+
         startButton.addActionListener(e -> {
             try {
                 tierMomentum = Integer.parseInt(tierMomentumField.getText());
@@ -261,8 +265,8 @@ public class MainGUI {
                 effects.jumpBoost = 0;
                 effects.speed = (Integer.parseInt(speedField.getText()));
                 effects.slowness = (Integer.parseInt(slownessField.getText()));
-                momentumWidth = Integer.parseInt(widthField.getText());
-                momentumHeight = Integer.parseInt(heightField.getText());
+                momentumWidth = Double.parseDouble(widthField.getText());
+                momentumHeight = Double.parseDouble(heightField.getText());
                 frontWall = frontWallCheck.isSelected();
                 rightWall = rightWallCheck.isSelected();
                 backWall = backWallCheck.isSelected();
@@ -276,7 +280,23 @@ public class MainGUI {
                 MacroRule rules = new MacroRule(inputs, momentumRule, tierMomentum, startingAngle,
                         minVectorAngleGoal, maxVectorAngleGoal, optimize, effects);
 
-                BruteForcer.start(rules);
+                // Interrupt the previous thread if it exists
+                if (bruteForceThread.get() != null && bruteForceThread.get().isAlive()) {
+                    bruteForceThread.get().interrupt();
+                }
+
+                // Create a new thread to run BruteForcer
+                bruteForceThread.set(new Thread(() -> {
+                    try {
+                        BruteForcer.start(rules);  // Start the brute forcing process
+                    } catch (Exception ex) {
+                        // Handle any errors in the brute forcing process
+                        JOptionPane.showMessageDialog(frame, "Error in brute forcing: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }));
+
+                // Start the new brute force thread
+                bruteForceThread.get().start();
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Invalid input! Please check your parameters.", "Error", JOptionPane.ERROR_MESSAGE);
