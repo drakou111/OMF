@@ -204,8 +204,8 @@ public class MainGUI {
         System.out.println("On the right side of the window, you can modify the restrictions.");
         System.out.println("- Tier Momentum - What tier the momentum should be in.");
         System.out.println("- Starting Angle - What angle should you be facing the whole time.");
-        System.out.println("- Min Vector Angle - Minimum final speed vector angle you should reach (0 if don't care).");
-        System.out.println("- Max Vector Angle - Maximum final speed vector angle you should reach (0 if don't care).");
+        System.out.println("- Min Vector Angle - Minimum final speed vector angle you should reach.");
+        System.out.println("- Max Vector Angle - Maximum final speed vector angle you should reach.");
         System.out.println("- Optimize - What to optimize for.");
         System.out.println("- Speed & Slowness - Potion effects to use. 0 is no effects.");
         System.out.println("- Momentum width/length - How much momentum is allowed (x and z). (eg: 1bm backwall would be width=1.6, length=1)");

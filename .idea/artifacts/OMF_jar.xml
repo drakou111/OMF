@@ -3,6 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/OMF_jar</output-path>
     <root id="archive" name="OMF.jar">
       <element id="module-output" name="OMF" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/formdev/flatlaf/2.0/flatlaf-2.0.jar" path-in-jar="/" />
     </root>
   </artifact>
