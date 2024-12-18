@@ -22,12 +22,12 @@ public class MacroRule {
         this.startingAngle = startingAngle;
 
         if (maxVectorAngleGoal < minVectorAngleGoal) {
-            this.minVectorAngleGoal = maxVectorAngleGoal;
-            this.maxVectorAngleGoal = minVectorAngleGoal;
+            this.minVectorAngleGoal = maxVectorAngleGoal * (float) Math.PI / 180f;
+            this.maxVectorAngleGoal = minVectorAngleGoal * (float) Math.PI / 180f;
         }
         else {
-            this.minVectorAngleGoal = minVectorAngleGoal;
-            this.maxVectorAngleGoal = maxVectorAngleGoal;
+            this.minVectorAngleGoal = minVectorAngleGoal * (float) Math.PI / 180f;
+            this.maxVectorAngleGoal = maxVectorAngleGoal * (float) Math.PI / 180f;
         }
         this.optimize = optimize;
         this.effects = effects;

@@ -1,20 +1,27 @@
 package omf;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import omf.enu.InputState;
 import omf.enu.SpeedOptimize;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.formdev.flatlaf.FlatDarkLaf;
 
 public class MainGUI {
 
@@ -26,12 +33,28 @@ public class MainGUI {
     private static SpeedOptimize optimize = SpeedOptimize.MAX_SPEED;
     private static Effects effects = new Effects(0, 0, 0);
     private static JTextArea terminalArea;
-    private static double momentumWidth = 10;
-    private static double momentumHeight = 10;
+    private static double momentumWidth = 1.6;
+    private static double momentumHeight = 1.6;
     private static boolean frontWall = false;
     private static boolean rightWall = false;
     private static boolean backWall = false;
     private static boolean leftWall = false;
+
+    private static JTextField tierMomentumField;
+    private static JTextField startingAngleField;
+    private static JTextField minAngleField;
+    private static JTextField maxAngleField;
+    private static JTextField speedField;
+    private static JTextField slownessField;
+    private static JTextField widthField;
+    private static JTextField heightField;
+    private static JCheckBox frontWallCheck;
+    private static JCheckBox rightWallCheck;
+    private static JCheckBox backWallCheck;
+    private static JCheckBox leftWallCheck;
+    private static JComboBox<SpeedOptimize> optimizeCombo;
+
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static void start() {
         try {
@@ -46,12 +69,34 @@ public class MainGUI {
         frame.setSize(1200, 800);
         frame.setLayout(new BorderLayout());
 
+
+        // Add a menu bar for Save/Load
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+
+        JMenuItem saveItem = new JMenuItem("Save State");
+        saveItem.addActionListener(e -> saveStateToClipboard());
+
+        JMenuItem loadItem = new JMenuItem("Load State");
+        loadItem.addActionListener(e -> loadStateFromText(frame));
+
+        fileMenu.add(saveItem);
+        fileMenu.add(loadItem);
+        menuBar.add(fileMenu);
+
+        frame.setJMenuBar(menuBar);
+
+
         // Input Panel
         JPanel inputPanel = new JPanel(new BorderLayout());
         JButton addInputButton = new JButton("Add Tick");
         DefaultListModel<MacroRuleInput> inputListModel = new DefaultListModel<>();
         JList<MacroRuleInput> inputList = new JList<>(inputListModel);
         inputList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        for (MacroRuleInput input : inputs) {
+            inputListModel.addElement(input);
+        }
 
         inputList.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -64,6 +109,26 @@ public class MainGUI {
                         if (updatedInput != null) {
                             inputs.set(selectedIndex, updatedInput);
                             inputListModel.set(selectedIndex, updatedInput);
+                        }
+                    }
+                }
+            }
+        });
+
+        inputList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE || e.getKeyCode() == KeyEvent.VK_DELETE) {
+                    int selectedIndex = inputList.getSelectedIndex();
+                    if (selectedIndex != -1) {
+                        inputs.remove(selectedIndex);
+                        inputListModel.remove(selectedIndex);
+
+                        // Automatically reselect an item
+                        if (selectedIndex > 0) {
+                            inputList.setSelectedIndex(selectedIndex - 1); // Select the one before
+                        } else if (!inputListModel.isEmpty()) {
+                            inputList.setSelectedIndex(0); // Select the first item if at the start
                         }
                     }
                 }
@@ -157,13 +222,22 @@ public class MainGUI {
 
 
         addInputButton.addActionListener(e -> {
-            MacroRuleInput input = new MacroRuleInput(
-                    InputState.OFF, InputState.OFF, InputState.OFF,
-                    InputState.OFF, InputState.OFF, InputState.OFF, InputState.OFF
-            );
-            inputs.add(input);
-            inputListModel.addElement(input);
+            MacroRuleInput input = new MacroRuleInput(InputState.OFF, InputState.OFF, InputState.OFF, InputState.OFF, InputState.OFF, InputState.OFF, InputState.OFF, 0.0F);
+            int selectedIndex = inputList.getSelectedIndex();
+
+            if (selectedIndex == -1) {
+                // If no item is selected, add to the end
+                inputs.add(input);
+                inputListModel.addElement(input);
+            } else {
+                // Insert after the selected slot
+                int insertIndex = selectedIndex + 1;
+                inputs.add(insertIndex, input);
+                inputListModel.add(insertIndex, input);
+                inputList.setSelectedIndex(insertIndex); // Keep the new item selected
+            }
         });
+
 
         JButton duplicateInputButton = new JButton("Duplicate Selected");
         duplicateInputButton.addActionListener(e -> {
@@ -173,7 +247,7 @@ public class MainGUI {
                 MacroRuleInput duplicate = new MacroRuleInput(
                         input.allStates[0], input.allStates[1], input.allStates[2],
                         input.allStates[3], input.allStates[4], input.allStates[5],
-                        input.allStates[6]
+                        input.allStates[6], input.turn
                 );
                 inputs.add(selectedIndex + 1, duplicate);
                 inputListModel.add(selectedIndex + 1, duplicate);
@@ -196,33 +270,49 @@ public class MainGUI {
             }
         });
 
+        JButton clearInputsButton = new JButton("Clear All");
+        clearInputsButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                    null,
+                    "Are you sure you want to clear all inputs?",
+                    "Confirm Clear",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                inputs.clear();
+                inputListModel.clear();
+            }
+        });
+
         JPanel inputButtonsPanel = new JPanel(new GridLayout(1, 3));
         inputButtonsPanel.add(addInputButton);
         inputButtonsPanel.add(duplicateInputButton);
         inputButtonsPanel.add(removeInputButton);
+        inputButtonsPanel.add(clearInputsButton);
 
         inputPanel.add(new JScrollPane(inputList), BorderLayout.CENTER);
         inputPanel.add(inputButtonsPanel, BorderLayout.SOUTH);
 
         // Parameter Panel (Right side)
         JPanel paramPanel = new JPanel(new GridLayout(0, 2));
-        JTextField tierMomentumField = new JTextField(String.valueOf(tierMomentum));
-        JTextField startingAngleField = new JTextField(String.valueOf(startingAngle));
-        JTextField minAngleField = new JTextField(String.valueOf(minVectorAngleGoal));
-        JTextField maxAngleField = new JTextField(String.valueOf(maxVectorAngleGoal));
+        tierMomentumField = new JTextField(String.valueOf(tierMomentum));
+        startingAngleField = new JTextField(String.valueOf(startingAngle));
+        minAngleField = new JTextField(String.valueOf(minVectorAngleGoal));
+        maxAngleField = new JTextField(String.valueOf(maxVectorAngleGoal));
 
-        JComboBox<SpeedOptimize> optimizeCombo = new JComboBox<>(SpeedOptimize.values());
+        optimizeCombo = new JComboBox<>(SpeedOptimize.values());
         optimizeCombo.setSelectedItem(optimize);
 
-        JTextField speedField = new JTextField(String.valueOf(effects.speed));
-        JTextField slownessField = new JTextField(String.valueOf(effects.slowness));
+        speedField = new JTextField(String.valueOf(effects.speed));
+        slownessField = new JTextField(String.valueOf(effects.slowness));
 
-        JTextField widthField = new JTextField(String.valueOf(momentumWidth));
-        JTextField heightField = new JTextField(String.valueOf(momentumHeight));
-        JCheckBox frontWallCheck = new JCheckBox("Front Wall", frontWall);
-        JCheckBox rightWallCheck = new JCheckBox("Right Wall", rightWall);
-        JCheckBox backWallCheck = new JCheckBox("Back Wall", backWall);
-        JCheckBox leftWallCheck = new JCheckBox("Left Wall", leftWall);
+        widthField = new JTextField(String.valueOf(momentumWidth));
+        heightField = new JTextField(String.valueOf(momentumHeight));
+        frontWallCheck = new JCheckBox("Front Wall", frontWall);
+        rightWallCheck = new JCheckBox("Right Wall", rightWall);
+        backWallCheck = new JCheckBox("Back Wall", backWall);
+        leftWallCheck = new JCheckBox("Left Wall", leftWall);
 
         paramPanel.add(new JLabel("Tier Momentum:"));
         paramPanel.add(tierMomentumField);
@@ -258,14 +348,12 @@ public class MainGUI {
 
         AtomicReference<Thread> bruteForceThread = new AtomicReference<>();  // Track the current brute force thread
 
-        //TODO: Add stop bruteforcer button maybe.
-
         startButton.addActionListener(e -> {
             try {
                 tierMomentum = Integer.parseInt(tierMomentumField.getText());
                 startingAngle = Float.parseFloat(startingAngleField.getText());
-                minVectorAngleGoal = Float.parseFloat(minAngleField.getText()) * (float) Math.PI / 180f;
-                maxVectorAngleGoal = Float.parseFloat(maxAngleField.getText()) * (float) Math.PI / 180f;
+                minVectorAngleGoal = Float.parseFloat(minAngleField.getText());
+                maxVectorAngleGoal = Float.parseFloat(maxAngleField.getText());
                 optimize = (SpeedOptimize) optimizeCombo.getSelectedItem();
                 effects.jumpBoost = 0;
                 effects.speed = (Integer.parseInt(speedField.getText()));
@@ -336,6 +424,128 @@ public class MainGUI {
         frame.setVisible(true);
     }
 
+    private static void saveStateToClipboard() {
+        // Create an object to store the state
+        AppState state = new AppState(inputs, tierMomentum, startingAngle, minVectorAngleGoal, maxVectorAngleGoal,
+                optimize, effects, momentumWidth, momentumHeight, frontWall, rightWall, backWall, leftWall);
+
+        // Serialize the state to JSON and encode as Base64
+        String json = gson.toJson(state);
+        String base64 = Base64.getEncoder().encodeToString(json.getBytes());
+
+        // Copy the Base64 string to the clipboard
+        StringSelection selection = new StringSelection(base64);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(selection, null);
+
+        JOptionPane.showMessageDialog(null, "State saved to clipboard!", "Save Successful", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private static void loadStateFromText(Frame frame) {
+        // Create a JDialog for input
+        JDialog dialog = new JDialog(frame, "Enter Base64 String", true);
+        dialog.setSize(400, 150);
+        dialog.setLocationRelativeTo(frame);
+
+        // Create an input field for the Base64 string
+        JTextField inputField = new JTextField();
+        inputField.setColumns(30);
+
+        // Create buttons for "OK" and "Cancel"
+        JButton okButton = new JButton("OK");
+        JButton cancelButton = new JButton("Cancel");
+
+        // Handle "OK" button click
+        okButton.addActionListener(e -> {
+            try {
+                // Get the Base64 string entered by the user
+                String base64 = inputField.getText().trim();
+
+                if (base64.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Please enter a valid Base64 string", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Decode the Base64 string and deserialize the JSON
+                String json = new String(Base64.getDecoder().decode(base64));
+                AppState state = gson.fromJson(json, AppState.class);
+
+                // Restore the state
+                inputs = state.inputs;
+                tierMomentum = state.tierMomentum;
+                startingAngle = state.startingAngle;
+                minVectorAngleGoal = state.minVectorAngleGoal;
+                maxVectorAngleGoal = state.maxVectorAngleGoal;
+                optimize = state.optimize;
+                effects = state.effects;
+                momentumWidth = state.momentumWidth;
+                momentumHeight = state.momentumHeight;
+                frontWall = state.frontWall;
+                rightWall = state.rightWall;
+                backWall = state.backWall;
+                leftWall = state.leftWall;
+
+                // Dispose the current window and restart the application
+                frame.dispose();
+                start();
+
+                JOptionPane.showMessageDialog(dialog, "State loaded successfully!", "Load Successful", JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Failed to load state: " + ex.getMessage(), "Load Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
+
+        // Handle "Cancel" button click
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        // Set up the layout of the dialog
+        JPanel panel = new JPanel();
+        panel.add(new JLabel("Enter Base64 String:"));
+        panel.add(inputField);
+        panel.add(okButton);
+        panel.add(cancelButton);
+
+        dialog.getContentPane().add(panel);
+        dialog.setVisible(true);
+    }
+
+    // Add a class to represent the application state
+    private static class AppState {
+        List<MacroRuleInput> inputs;
+        int tierMomentum;
+        float startingAngle;
+        float minVectorAngleGoal;
+        float maxVectorAngleGoal;
+        SpeedOptimize optimize;
+        Effects effects;
+        double momentumWidth;
+        double momentumHeight;
+        boolean frontWall;
+        boolean rightWall;
+        boolean backWall;
+        boolean leftWall;
+
+        AppState(List<MacroRuleInput> inputs, int tierMomentum, float startingAngle, float minVectorAngleGoal,
+                 float maxVectorAngleGoal, SpeedOptimize optimize, Effects effects, double momentumWidth,
+                 double momentumHeight, boolean frontWall, boolean rightWall, boolean backWall, boolean leftWall) {
+            this.inputs = inputs;
+            this.tierMomentum = tierMomentum;
+            this.startingAngle = startingAngle;
+            this.minVectorAngleGoal = minVectorAngleGoal;
+            this.maxVectorAngleGoal = maxVectorAngleGoal;
+            this.optimize = optimize;
+            this.effects = effects;
+            this.momentumWidth = momentumWidth;
+            this.momentumHeight = momentumHeight;
+            this.frontWall = frontWall;
+            this.rightWall = rightWall;
+            this.backWall = backWall;
+            this.leftWall = leftWall;
+        }
+    }
+
     private static void redirectSystemOutToTerminal() {
         OutputStream outputStream = new OutputStream() {
             @Override
@@ -376,6 +586,27 @@ public class MainGUI {
         JComboBox<InputState> jumpBox = new JComboBox<>(InputState.values());
         jumpBox.setSelectedItem(input.allStates[6]);
 
+        JTextField turnField = new JTextField(20); // 10-character-wide input field
+        turnField.setText(String.valueOf(input.turn)); // Assuming 'input' has a getTurn() method
+
+        turnField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                String text = turnField.getText();
+                try {
+                    input.turn = Float.parseFloat(text); // Assuming 'input' has a setTurn(float) method
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Please enter a valid float value for Turn.",
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    turnField.requestFocus(); // Refocus the field if input is invalid
+                }
+            }
+        });
+
         JPanel panel = new JPanel(new GridLayout(0, 2));
         panel.add(new JLabel("W:"));
         panel.add(wBox);
@@ -391,17 +622,20 @@ public class MainGUI {
         panel.add(shiftBox);
         panel.add(new JLabel("JUMP:"));
         panel.add(jumpBox);
+        panel.add(new JLabel("TURN:"));
+        panel.add(turnField);
 
         int result = JOptionPane.showConfirmDialog(parent, panel, "Edit MacroRuleInput", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             return new MacroRuleInput(
-                    (InputState) wBox.getSelectedItem(),
-                    (InputState) aBox.getSelectedItem(),
-                    (InputState) sBox.getSelectedItem(),
-                    (InputState) dBox.getSelectedItem(),
-                    (InputState) sprintBox.getSelectedItem(),
-                    (InputState) shiftBox.getSelectedItem(),
-                    (InputState) jumpBox.getSelectedItem()
+                (InputState) wBox.getSelectedItem(),
+                (InputState) aBox.getSelectedItem(),
+                (InputState) sBox.getSelectedItem(),
+                (InputState) dBox.getSelectedItem(),
+                (InputState) sprintBox.getSelectedItem(),
+                (InputState) shiftBox.getSelectedItem(),
+                (InputState) jumpBox.getSelectedItem(),
+                Float.parseFloat(turnField.getText())
             );
         }
         return null;

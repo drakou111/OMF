@@ -1,7 +1,5 @@
 package omf.util;
 
-import omf.enu.InputState;
-
 public class InputTick {
     public boolean W;
     public boolean A;
@@ -11,8 +9,9 @@ public class InputTick {
     public boolean SHIFT;
     public boolean JUMP;
     public boolean GROUNDED;
+    public float TURN;
 
-    public InputTick(boolean W, boolean A, boolean S, boolean D,boolean SPRINT, boolean SHIFT, boolean JUMP, boolean GROUNDED) {
+    public InputTick(boolean W, boolean A, boolean S, boolean D,boolean SPRINT, boolean SHIFT, boolean JUMP, boolean GROUNDED, float TURN) {
         this.W = W;
         this.A = A;
         this.S = S;
@@ -21,6 +20,7 @@ public class InputTick {
         this.SHIFT = SHIFT;
         this.JUMP = JUMP;
         this.GROUNDED = GROUNDED;
+        this.TURN = TURN;
     }
 
     @Override
@@ -34,6 +34,7 @@ public class InputTick {
         result += SPRINT ? "SPRINT " : "";
         result += SHIFT ? "SHIFT" : "";
         result += JUMP ? "JUMP " : "";
+        result += TURN > 0 ? ("+" + TURN + "°") : (TURN < 0 ? (TURN + "°") : "");
         result += GROUNDED ? "(on ground)" : "";
 
         if (result.isEmpty()) return "No input";

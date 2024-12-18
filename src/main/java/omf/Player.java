@@ -132,6 +132,8 @@ public class Player {
 
         updateFlags(inputTick);
 
+        facing += inputTick.TURN;
+
         if (Math.abs(velocity.x) < 0.005D) velocity.x = 0.0D;
         if (Math.abs(velocity.y) < 0.005D) velocity.y = 0.0D;
         if (Math.abs(velocity.z) < 0.005D) velocity.z = 0.0D;

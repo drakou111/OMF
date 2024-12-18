@@ -6,7 +6,6 @@ import omf.util.Vec3;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class BruteForcer {
@@ -206,7 +205,8 @@ public class BruteForcer {
                 inputs.allStates[4] == InputState.ON,
                 inputs.allStates[5] == InputState.ON,
                 inputs.allStates[6] == InputState.ON,
-                grounded
+                grounded,
+                inputs.turn
             ));
             return results;
         }
