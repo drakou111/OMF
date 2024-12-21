@@ -21,7 +21,10 @@ public class BruteForcer {
         List<Vec3> positions = new ArrayList<>();
         positions.add(new Vec3(0, 0, 0));
 
-        branch(rules, 0, 999999, player,positions, new ArrayList<>());
+        List<InputTick> allInputs = new ArrayList<>();
+        allInputs.add(new InputTick(false, false, false, false, false, false, false, true, 0.0f));
+
+        branch(rules, 0, 999999, player,positions, allInputs);
         System.out.println("Done.");
     }
 
