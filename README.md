@@ -1,5 +1,7 @@
 # OMF (Optimal Momentum Finder)
 
+![image](https://github.com/user-attachments/assets/c5e3a739-04cd-4d8f-8617-b3e39d571213)
+
 ## What is this?
 This is a program that lets you come up with optimal minecraft macros for your jumps, given some restrictions on the jump.
 
