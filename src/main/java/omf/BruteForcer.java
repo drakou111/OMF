@@ -17,7 +17,11 @@ public class BruteForcer {
 
         BruteForcer.bestFinalVector = new Vec3(0, 0, 0);
         Player player = new Player(new Vec3(0, 0, 0), rules.startingAngle, rules.effects.jumpBoost, rules.effects.speed, rules.effects.slowness);
-        branch(rules, 0, 999999, player, new ArrayList<>(), new ArrayList<>());
+
+        List<Vec3> positions = new ArrayList<>();
+        positions.add(new Vec3(0, 0, 0));
+
+        branch(rules, 0, 999999, player,positions, new ArrayList<>());
         System.out.println("Done.");
     }
 
